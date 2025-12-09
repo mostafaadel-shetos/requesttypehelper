@@ -1,997 +1,706 @@
-​​<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request Type Helper</title>
-    
-    <!-- 1. Load Tailwind CSS FIRST -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Request Type Helper</title>
 
-    <!-- 2. Configure Tailwind AFTER loading -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class', 
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.2s ease-out',
-                        'slide-up': 'slideUp 0.3s ease-out',
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' },
-                        },
-                        slideUp: {
-                            '0%': { transform: 'translateY(10px)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .request-path { font-size: 0.75rem; margin-bottom: 0.5rem; font-weight: 500; }
-        @keyframes pulse-border {
-            0% { border-color: rgba(79, 70, 229, 0.4); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.2); }
-            70% { border-color: rgba(79, 70, 229, 1); box-shadow: 0 0 0 6px rgba(79, 70, 229, 0); }
-            100% { border-color: rgba(79, 70, 229, 0.4); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          animation: {
+            'fade-in': 'fadeIn 0.2s ease-out',
+            'slide-up': 'slideUp 0.3s ease-out'
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+            slideUp: { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+          }
         }
-        .best-match {
-            border-width: 2px;
-            animation: pulse-border 2s infinite;
-        }
-        .logo-text {
-            font-family: 'Arial Black', 'Helvetica Neue', sans-serif;
-            letter-spacing: -0.05em;
-        }
-        /* Custom scrollbar for results area */
-        .results-scroll::-webkit-scrollbar { width: 8px; }
-        .results-scroll::-webkit-scrollbar-track { background: transparent; }
-        .results-scroll::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.5); border-radius: 20px; }
-    </style>
+      }
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .request-path { font-size: 0.75rem; margin-bottom: 0.5rem; font-weight: 500; }
+    @keyframes pulse-border {
+      0% { border-color: rgba(79, 70, 229, 0.4); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.2); }
+      70% { border-color: rgba(79, 70, 229, 1); box-shadow: 0 0 0 6px rgba(79, 70, 229, 0); }
+      100% { border-color: rgba(79, 70, 229, 0.4); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+    }
+    .best-match { border-width: 2px; animation: pulse-border 2s infinite; }
+    .results-scroll::-webkit-scrollbar { width: 8px; }
+    .results-scroll::-webkit-scrollbar-track { background: transparent; }
+    .results-scroll::-webkit-scrollbar-thumb { background-color: rgba(156,163,175,0.5); border-radius: 20px; }
+    #copy-toast { pointer-events: none; }
+  </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
-    <div id="app" class="min-h-screen p-4 sm:p-8"></div>
+  <div id="app" class="min-h-screen p-4 sm:p-8"></div>
 
-    <script>
-        // ===================================================================
-        // 🟢 CONFIGURATION
-        // ===================================================================
-        
-        // 1. URL for the MAIN DATA (RT Trees - 3 Levels + Desc)
-        const MAIN_DATA_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvs2dBHF01vfJADCqiPjvM1ZFrZ9DRQpBbMC57BHK-kFe2KK7TmZiIaQXUoaEelVuqh-AZzS5HKEoG/pub?output=csv'; 
-        
-        // 2. URL for the GUIDE TAB (4 Levels: Lvl 1, Lvl 1+, Lvl 2, Lvl 3)
-        const GUIDE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1MMe9-KxDDoNVK2PZTrtP2hjyQfm4xrfog3tdJZzaRf4/export?format=csv&gid=372968059'; 
+  <script>
+  // -----------------------
+  // Configuration
+  // -----------------------
+  const MAIN_DATA_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvs2dBHF01vfJADCqiPjvM1ZFrZ9DRQpBbMC57BHK-kFe2KK7TmZiIaQXUoaEelVuqh-AZzS5HKEoG/pub?output=csv';
+  const GUIDE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1MMe9-KxDDoNVK2PZTrtP2hjyQfm4xrfog3tdJZzaRf4/export?format=csv&gid=372968059';
+  const AUTO_REFRESH_INTERVAL = 300000;
+  const LOGO_URL = 'https://i.ibb.co/MkQ18QyV/Logo.png';
 
-        // 3. Auto Refresh Interval (in milliseconds)
-        // 300000 ms = 5 minutes
-        const AUTO_REFRESH_INTERVAL = 300000; 
+  const STOP_WORDS = new Set(['a','an','the','and','or','but','is','are','was','were','be','been','in','on','at','to','for','from','of','with','by','about','i','my','me','we','our','us','you','your','he','his','him','she','her','it','its','they','their','them','this','that','these','those','have','has','had','do','does','did','can','could','will','would','should','want','wants','need','needs','please','help','hi','hello','regarding','issue','problem','question','ask','asking','customer','client','user','very','upset','angry','because']);
+  const ALL_KNOWN_PRODUCTS = ['Studio','Move','Core','MegaSafe','BYOD','App','Accessories','Miscellaneous'];
 
-        const LOGO_URL = 'https://i.ibb.co/MkQ18QyV/Logo.png';
+  const CONCEPT_MAP = {
+    studio: {term:'Studio',type:'product'},
+    move: {term:'Move',type:'product'},
+    core: {term:'Core',type:'product'},
+    megasafe: {term:'MegaSafe',type:'product'},
+    byod: {term:'BYOD',type:'product'},
+    mobile: {term:'App',type:'product'},
+    app: {term:'App',type:'product'},
+    iphone: {term:'App',type:'product'},
+    android: {term:'App',type:'product'},
+    accessory: {term:'Accessories',type:'product'},
+    accessories: {term:'Accessories',type:'product'},
+    order: {term:'Order',type:'category'},
+    shipping: {term:'Shipping',type:'category'},
+    delivery: {term:'Delivery',type:'category'},
+    billing: {term:'Billing',type:'category'},
+    account: {term:'Account',type:'category'},
+    content: {term:'Content',type:'category'},
+    membership: {term:'Membership',type:'category'},
+    prospective: {term:'Prospective',type:'category'},
+    sales: {term:'Prospective',type:'category'}
+  };
 
-        // ===================================================================
+  const GUIDE_L1_PLUS_OPTIONS = [
+    { label: "Order Support", keywords: ["order"] },
+    { label: "Product Support", keywords: ["product support", "technical"] },
+    { label: "Prospective", keywords: ["prospective", "sales"] },
+    { label: "Account / Billing", keywords: ["account", "billing", "membership"] },
+    { label: "Content", keywords: ["content", "class"] },
+    { label: "Shipping / Delivery", keywords: ["shipping", "delivery"] }
+  ];
 
-        const STOP_WORDS = new Set([
-            'a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'be', 'been', 
-            'in', 'on', 'at', 'to', 'for', 'from', 'of', 'with', 'by', 'about', 
-            'i', 'my', 'me', 'we', 'our', 'us', 'you', 'your', 'he', 'his', 'him', 'she', 'her', 'it', 'its', 'they', 'their', 'them', 
-            'this', 'that', 'these', 'those', 'have', 'has', 'had', 'do', 'does', 'did', 
-            'can', 'could', 'will', 'would', 'should', 'want', 'wants', 'need', 'needs', 'please', 'help', 'hi', 'hello', 
-            'regarding', 'issue', 'problem', 'question', 'ask', 'asking', 'customer', 'client', 'user', 'very', 'upset', 'angry', 'because'
-        ]);
+  // -----------------------
+  // State
+  // -----------------------
+  let requestTypesData = [];
+  let guideData = [];
+  let wordFrequency = {};
+  let totalDocuments = 0;
+  let selectedL1 = '', selectedL2 = '', selectedL3 = '';
+  let currentFinalRequest = null;
+  let searchTerm = '';
+  let isLoading = true;
+  let isLayoutLoaded = false;
+  let errorMsg = null;
+  let guideStack = [];
+  let isDarkMode = false;
 
-        const ALL_KNOWN_PRODUCTS = ['Studio', 'Move', 'Core', 'MegaSafe', 'BYOD', 'App', 'Accessories', 'Miscellaneous'];
+  try { isDarkMode = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches); } catch(e){}
 
-        // 🧠 CONCEPT MAP (Restored)
-        const CONCEPT_MAP = {
-            'studio': { term: 'Studio', type: 'product' },
-            'move': { term: 'Move', type: 'product' },
-            'core': { term: 'Core', type: 'product' },
-            'megasafe': { term: 'MegaSafe', type: 'product' },
-            'byod': { term: 'BYOD', type: 'product' },
-            'mobile': { term: 'App', type: 'product' },
-            'app': { term: 'App', type: 'product' },
-            'iphone': { term: 'App', type: 'product' },
-            'android': { term: 'App', type: 'product' },
-            'accessory': { term: 'Accessories', type: 'product' },
-            'accessories': { term: 'Accessories', type: 'product' },
-            'weight': { term: 'Accessories', type: 'product' },
-            'weights': { term: 'Accessories', type: 'product' },
-            'dumbbell': { term: 'Accessories', type: 'product' },
-            'barbell': { term: 'Accessories', type: 'product' },
-            'kettlebell': { term: 'Accessories', type: 'product' },
-            'order': { term: 'Order', type: 'category' },
-            'shipping': { term: 'Shipping', type: 'category' },
-            'delivery': { term: 'Delivery', type: 'category' },
-            'track': { term: 'Order', type: 'category' },
-            'return': { term: 'Order', type: 'category' },
-            'refund': { term: 'Order', type: 'category' },
-            'billing': { term: 'Billing', type: 'category' },
-            'account': { term: 'Account', type: 'category' },
-            'content': { term: 'Content', type: 'category' },
-            'class': { term: 'Content', type: 'category' },
-            'subscription': { term: 'Membership', type: 'category' },
-            'membership': { term: 'Membership', type: 'category' },
-            'prospective': { term: 'Prospective', type: 'category' },
-            'sales': { term: 'Prospective', type: 'category' }
-        };
+  const appDiv = document.getElementById('app');
+  if (isDarkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
 
-        // Define keywords for mapping Guide L1+ to Main Data L1
-        const GUIDE_L1_PLUS_OPTIONS = [
-            { label: "Order Support", keywords: ["order"] },
-            { label: "Product Support", keywords: ["product support", "technical"] },
-            { label: "Prospective", keywords: ["prospective", "sales"] },
-            { label: "Account / Billing", keywords: ["account", "billing", "membership"] },
-            { label: "Content", keywords: ["content", "class"] },
-            { label: "Shipping / Delivery", keywords: ["shipping", "delivery"] }
-        ];
+  // -----------------------
+  // Helpers
+  // -----------------------
+  function simpleStem(w){
+    if(!w) return '';
+    if(w.length<4) return w;
+    if(w.endsWith('ing')) return w.slice(0,-3);
+    if(w.endsWith('ed')) return w.slice(0,-2);
+    if(w.endsWith('es')) return w.slice(0,-2);
+    if(w.endsWith('s') && !w.endsWith('ss')) return w.slice(0,-1);
+    return w;
+  }
+  function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+  function matchesToken(text, token){
+    if(!text) return false;
+    const pat = new RegExp('\\b' + escapeRegExp(token), 'i');
+    return pat.test(text);
+  }
 
-        // Data Storage
-        let requestTypesData = []; // Main Data
-        let guideData = [];        // Guide Data (4 columns)
-        
-        let wordFrequency = {}; 
-        let totalDocuments = 0;
+  function getIcon(name, customClass=''){
+    // Minimal icons to avoid very long inline SVGs and keep file readable
+    if(name==='Search') return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="${customClass}"><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+    if(name==='Check') return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="${customClass}"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    if(name==='Loader') return `<svg width="24" height="24" viewBox="0 0 50 50" class="${customClass}"><circle cx="25" cy="25" r="20" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="31.4 31.4"/></svg>`;
+    if(name==='ChevronLeft') return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    if(name==='X') return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    if(name==='Compass') return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M16 8l-8 4 4 4 4-8z" fill="currentColor"/></svg>`;
+    return '';
+  }
 
-        let selectedL1 = '';
-        let selectedL2 = '';
-        let selectedL3 = '';
-        let currentFinalRequest = null;
-        let searchTerm = '';
-        let isLoading = true;
-        let isLayoutLoaded = false;
-        let errorMsg = null;
-        
-        // Guide Modal State
-        let guideStack = []; 
+  // -----------------------
+  // CSV parsing + indexing
+  // -----------------------
+  function parseCSV(str){
+    const rows = [];
+    let row = [], cur = '', inQuotes = false;
+    for(let i=0;i<str.length;i++){
+      const ch = str[i], nxt = str[i+1];
+      if(ch === '"' && inQuotes && nxt === '"'){ cur += '"'; i++; continue; }
+      if(ch === '"'){ inQuotes = !inQuotes; continue; }
+      if(ch === ',' && !inQuotes){ row.push(cur); cur = ''; continue; }
+      if((ch === '\n' || ch === '\r') && !inQuotes){
+        if(ch === '\r' && nxt === '\n'){ i++; }
+        row.push(cur); rows.push(row); row = []; cur = ''; continue;
+      }
+      cur += ch;
+    }
+    if(cur !== '' || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
 
-        // Initialize Theme safely
-        let isDarkMode = false;
+  function buildSearchIndex(data){
+    wordFrequency = {};
+    totalDocuments = data.length;
+    data.forEach(item=>{
+      const text = `${item.L1} ${item.L2} ${item.L3} ${item.description}`.toLowerCase();
+      const tokens = text.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g," ").split(/\s+/);
+      tokens.forEach(t=>{
+        if(t.length>2 && !STOP_WORDS.has(t)){
+          const stem = simpleStem(t);
+          wordFrequency[stem] = (wordFrequency[stem] || 0) + 1;
+        }
+      });
+    });
+  }
+
+  async function fetchWithRetry(url, retries=3){
+    for(let i=0;i<retries;i++){
+      try {
+        const r = await fetch(url);
+        if(!r.ok) throw new Error('HTTP ' + r.status);
+        return await r.text();
+      } catch(e){
+        if(i===retries-1) throw e;
+        await new Promise(r=>setTimeout(r,1000));
+      }
+    }
+  }
+
+  // -----------------------
+  // Fetch data + render
+  // -----------------------
+  async function fetchData(isBackground=false){
+    if(!isBackground){
+      isLoading = true; isLayoutLoaded = false; errorMsg = null;
+      selectedL1 = selectedL2 = selectedL3 = ''; currentFinalRequest = null; searchTerm = '';
+      renderApp();
+    } else {
+      const refreshIcon = document.querySelector('#refresh-btn svg');
+      if(refreshIcon) refreshIcon.classList.add('animate-spin');
+    }
+
+    try {
+      const ts = Date.now();
+      const mainText = await fetchWithRetry(MAIN_DATA_CSV_URL + '&t=' + ts);
+      if(mainText.trim().startsWith('<!DOCTYPE') || mainText.trim().startsWith('<html')) throw new Error('Invalid CSV');
+      const rows = parseCSV(mainText);
+      const newData = rows.slice(1).map(r=>({
+        L1: (r[0]||'').trim(),
+        L2: (r[1]||'').trim(),
+        L3: (r[2]||'').trim(),
+        description: (r[3]||'').trim()
+      })).filter(x=>x && x.L1);
+      // guide data
+      if(GUIDE_SHEET_CSV_URL && !GUIDE_SHEET_CSV_URL.includes('PASTE_YOUR_GUIDE')){
         try {
-            isDarkMode = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        } catch(e) { console.log('LocalStorage access denied'); }
-
-        const appDiv = document.getElementById('app');
-        if (isDarkMode) document.documentElement.classList.add('dark');
-        else document.documentElement.classList.remove('dark');
-
-        // --- Helpers ---
-
-        function simpleStem(word) {
-            if (word.length < 4) return word;
-            if (word.endsWith('ing')) return word.slice(0, -3);
-            if (word.endsWith('ed')) return word.slice(0, -2);
-            if (word.endsWith('es')) return word.slice(0, -2);
-            if (word.endsWith('s') && !word.endsWith('ss')) return word.slice(0, -1);
-            return word;
-        }
-
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
-        }
-
-        function matchesToken(text, token) {
-            if (!text) return false;
-            const pattern = new RegExp(`\\b${escapeRegExp(token)}`, 'i');
-            return pattern.test(text);
-        }
-
-        function getIcon(name, customClass = '') {
-            const defaultClass = "text-gray-400 dark:text-gray-300"; 
-            const finalClass = customClass || defaultClass;
-            
-            if(name === 'Search') return `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${finalClass}"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
-            if(name === 'Check') return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${finalClass}"><path d="M22 11.08V12a10 10 0 1 1-5.84-8.82"/><path d="M9 11l3 3 7-7"/></svg>`;
-            if(name === 'Loader') return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin text-indigo-600 dark:text-indigo-400"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>`;
-            if(name === 'Refresh') return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`;
-            if(name === 'Moon') return `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500 dark:text-indigo-300"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
-            if(name === 'Sun') return `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
-            if(name === 'Star') return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
-            if(name === 'X') return `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-            if(name === 'Compass') return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>`;
-            if(name === 'ChevronLeft') return `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
-            return '';
-        }
-
-        // --- Data Fetching ---
-
-        function parseCSV(str) {
-            const arr = [];
-            let quote = false;
-            let col = 0;
-            let row = 0;
-            let c = 0;
-            for (; c < str.length; c++) {
-                let cc = str[c], nc = str[c + 1];
-                arr[row] = arr[row] || [];
-                arr[row][col] = arr[row][col] || '';
-                if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
-                if (cc == '"') { quote = !quote; continue; }
-                if (cc == ',' && !quote) { ++col; continue; }
-                if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
-                if (cc == '\n' && !quote) { ++row; col = 0; continue; }
-                if (cc == '\r' && !quote) { ++row; col = 0; continue; }
-                arr[row][col] += cc;
-            }
-            return arr;
-        }
-
-        function buildSearchIndex(data) {
-            wordFrequency = {};
-            totalDocuments = data.length;
-            data.forEach(item => {
-                const text = `${item.L1} ${item.L2} ${item.L3} ${item.description}`.toLowerCase();
-                const tokens = text.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g," ").split(/\s+/);
-                tokens.forEach(t => {
-                    if (t.length > 2 && !STOP_WORDS.has(t)) {
-                        const stem = simpleStem(t);
-                        wordFrequency[stem] = (wordFrequency[stem] || 0) + 1;
-                    }
-                });
-            });
-        }
-
-        async function fetchWithRetry(url, retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
-                    return await response.text();
-                } catch (err) {
-                    if (i === retries - 1) throw err;
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-            }
-        }
-
-        // 🧠 DATA FETCHING WITH AUTO-SYNC
-        async function fetchData(isBackground = false) {
-            if (!isBackground) {
-                // MANUAL RESET: Clear state completely
-                isLoading = true;
-                isLayoutLoaded = false; 
-                errorMsg = null;
-                selectedL1 = ''; selectedL2 = ''; selectedL3 = '';
-                currentFinalRequest = null; searchTerm = '';
-                renderApp(); 
-            } else {
-                // BACKGROUND SYNC: Show visual indicator
-                const refreshIcon = document.querySelector('#refresh-btn svg');
-                if(refreshIcon) refreshIcon.classList.add('animate-spin');
-            }
-
-            try {
-                const timestamp = new Date().getTime();
-                
-                // 1. Fetch Main Data
-                const mainText = await fetchWithRetry(`${MAIN_DATA_CSV_URL}&t=${timestamp}`);
-                if (mainText.trim().startsWith("<!DOCTYPE") || mainText.trim().startsWith("<html")) throw new Error("Invalid Main CSV format.");
-                const mainRows = parseCSV(mainText);
-                const newData = mainRows.slice(1).map(row => {
-                    if (row.length < 3) return null; 
-                    return { L1: row[0]?.trim() || "", L2: row[1]?.trim() || "", L3: row[2]?.trim() || "", description: row[3]?.trim() || "" };
-                }).filter(item => item !== null && item.L1); 
-
-                // 2. Fetch Guide Data
-                if (GUIDE_SHEET_CSV_URL && !GUIDE_SHEET_CSV_URL.includes("PASTE_YOUR_GUIDE")) {
-                    try {
-                        const guideText = await fetchWithRetry(`${GUIDE_SHEET_CSV_URL}&t=${timestamp}`);
-                        const guideRows = parseCSV(guideText);
-                        guideData = guideRows.slice(1).map(row => ({
-                            L1: row[0]?.trim() || "",
-                            L1Plus: row[1]?.trim() || "",
-                            L2: row[2]?.trim() || "",
-                            L3: row[3]?.trim() || ""
-                        })).filter(r => r.L1);
-                    } catch(e) {
-                        console.warn("Could not load Guide data:", e);
-                    }
-                }
-
-                if (newData.length === 0) throw new Error("No data found.");
-
-                // Update Globals safely
-                requestTypesData = newData;
-                buildSearchIndex(requestTypesData); 
-                isLoading = false;
-                
-                // Re-render
-                renderApp();
-                
-                // Update Footer with Time
-                updateFooter();
-
-            } catch (error) {
-                if (!isBackground) {
-                    isLoading = false;
-                    errorMsg = error.message;
-                    renderApp();
-                } else {
-                    console.warn("Background sync failed:", error);
-                }
-            } finally {
-                if(isBackground) {
-                    const refreshIcon = document.querySelector('#refresh-btn svg');
-                    if(refreshIcon) refreshIcon.classList.remove('animate-spin');
-                }
-            }
-        }
-
-        // --- Logic & Events ---
-
-        function debounce(func, delay) {
-            let timeoutId;
-            return function(...args) {
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
-
-        function getUniqueOptions(levelKey, filterL1 = '', filterL2 = '') {
-            let filteredData = requestTypesData;
-            if (filterL1) filteredData = filteredData.filter(item => item.L1 === filterL1);
-            if (filterL2) filteredData = filteredData.filter(item => item.L2 === filterL2);
-            
-            const seen = new Set();
-            const result = [];
-            for (const item of filteredData) {
-                const val = item[levelKey];
-                if (val && !seen.has(val)) {
-                    seen.add(val);
-                    result.push(val);
-                }
-            }
-            return result;
-        }
-
-        // ROBUST THEME TOGGLE
-        function handleThemeToggle() {
-            isDarkMode = !isDarkMode;
-            if (isDarkMode) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-            try { localStorage.setItem('theme', isDarkMode ? 'dark' : 'light'); } catch(e) {}
-            const btn = document.getElementById('theme-btn');
-            if(btn) btn.innerHTML = isDarkMode ? getIcon('Sun') : getIcon('Moon');
-        }
-
-        // --- GUIDE MODAL FUNCTIONS ---
-        
-        function handleEscPress(e) {
-            if (e.key === 'Escape') closeGuide();
-        }
-
-        function openGuide() {
-            // Safety check for guide data
-            if(guideData.length === 0) {
-                alert("Guide data not loaded. Please check the CSV URL.");
-                return;
-            }
-            guideStack = [];
-            renderGuideStep();
-            document.getElementById('guide-modal').classList.remove('hidden');
-            
-            // Lock Scroll & Add Esc Listener
-            document.body.style.overflow = 'hidden';
-            document.addEventListener('keydown', handleEscPress);
-        }
-
-        function closeGuide() {
-            document.getElementById('guide-modal').classList.add('hidden');
-            
-            // Unlock Scroll & Remove Esc Listener
-            document.body.style.overflow = '';
-            document.removeEventListener('keydown', handleEscPress);
-        }
-
-        function guideBack() {
-            if (guideStack.length > 0) {
-                guideStack.pop();
-                
-                // --- BACKWARD AUTO-SKIP LOGIC ---
-                if (guideStack.length === 1) {
-                     const selL1 = guideStack[0];
-                     const opts = new Set(guideData.filter(r => r.L1 === selL1).map(r => r.L1Plus));
-                     const options = Array.from(opts);
-                     if (options.length === 1 && !options[0]) {
-                         guideStack.pop(); 
-                     }
-                }
-                
-                renderGuideStep();
-            }
-        }
-
-        function handleGuideSelection(value) {
-            guideStack.push(value);
-            renderGuideStep();
-        }
-
-        // COMBINE LOGIC: Guide -> Main Data
-        function useGuideSelection(gL1, gL1Plus, gL2, gL3) {
-            // User Request: Reset Tree to empty on all levels when this button is pressed.
-            // This decouples the Guide results from the Tree Panel dropdowns.
-            
-            selectedL1 = '';
-            selectedL2 = '';
-            selectedL3 = '';
-            currentFinalRequest = null;
-            
-            closeGuide();
-            renderTreePanelOnly(); 
-        }
-
-        function determineRequestNature(description) {
-            if (!description) return "Issue or Inquiry";
-            const lowerDesc = description.toLowerCase();
-            
-            // Inquiry indicators
-            const inquiryKeywords = ['how to', 'question', 'inquiry', 'info', 'status', 'track', 'where is', 'clarify', 'billing date', 'update'];
-            // Issue indicators
-            const issueKeywords = ['broken', 'damaged', 'error', 'fail', 'not working', 'issue', 'problem', 'defect', 'refund', 'return', 'cancel', 'wobble', 'noise'];
-
-            const isIssue = issueKeywords.some(k => lowerDesc.includes(k));
-            const isInquiry = inquiryKeywords.some(k => lowerDesc.includes(k));
-
-            if (isIssue) return "Issue";
-            if (isInquiry) return "Inquiry";
-            return "Issue or Inquiry"; // Default if unclear
-        }
-
-        // 🧠 WIZARD LOGIC - USING GUIDE DATA
-        function renderGuideStep() {
-            const container = document.getElementById('guide-content');
-            const title = document.getElementById('guide-title');
-            const backBtn = document.getElementById('guide-back-btn');
-            
-            if (!container) return;
-
-            // Current Level: 1, 2, 3, or 4
-            const currentLevel = guideStack.length + 1; 
-            const selL1 = guideStack[0];
-            const selL1Plus = guideStack[1];
-            const selL2 = guideStack[2];
-
-            // Update Back Button
-            if (currentLevel > 1) {
-                backBtn.classList.remove('invisible');
-            } else {
-                backBtn.classList.add('invisible');
-            }
-
-            let options = [];
-            let isFinalStep = false;
-            let finalItem = null;
-
-            // --- STEP 1: SELECT PRODUCT ---
-            if (currentLevel === 1) {
-                title.innerText = "Select Product";
-                const opts = new Set(guideData.map(r => r.L1));
-                options = Array.from(opts);
-            } 
-            
-            // --- STEP 2: SELECT TYPE ---
-            else if (currentLevel === 2) {
-                title.innerText = `Select Type for ${selL1}`;
-                const opts = new Set(
-                    guideData.filter(r => r.L1 === selL1).map(r => r.L1Plus)
-                );
-                options = Array.from(opts);
-                
-                // --- FORWARD AUTO SKIP LOGIC ---
-                if (options.length === 1 && !options[0]) {
-                    guideStack.push(""); 
-                    renderGuideStep();
-                    return;
-                }
-            } 
-            
-            // --- STEP 3: SELECT CATEGORY ---
-            else if (currentLevel === 3) {
-                title.innerText = "Select Category";
-                const opts = new Set(
-                    guideData.filter(r => r.L1 === selL1 && r.L1Plus === selL1Plus).map(r => r.L2)
-                );
-                options = Array.from(opts);
-                
-                if(options.length === 0 || (options.length === 1 && !options[0])) {
-                     isFinalStep = true;
-                }
-            } 
-            
-            // --- STEP 4: SELECT ISSUE ---
-            else if (currentLevel === 4) {
-                title.innerText = "Select Issue or Inquiry";
-                const opts = new Set(
-                    guideData.filter(r => r.L1 === selL1 && r.L1Plus === selL1Plus && r.L2 === selL2).map(r => r.L3)
-                );
-                options = Array.from(opts);
-                
-                if(options.length === 0 || (options.length === 1 && !options[0])) {
-                     isFinalStep = true;
-                }
-            }
-
-            // --- STEP 5: CONFIRM ---
-            else {
-                isFinalStep = true;
-            }
-
-            // Render
-            if (isFinalStep) {
-                const selL3 = guideStack[3] || '';
-                
-                const categoryObj = GUIDE_L1_PLUS_OPTIONS.find(c => c.label === selL1Plus);
-                const categoryKeywords = categoryObj ? categoryObj.keywords : [selL1Plus.toLowerCase()];
-
-                const validRows = requestTypesData.filter(row => {
-                    const l1 = row.L1.toLowerCase();
-                    const prod = selL1.toLowerCase();
-                    const matchesKeyword = categoryKeywords.some(k => l1.includes(k));
-                    if(!matchesKeyword) return false;
-                    const isSpecific = l1.includes(prod);
-                    const isGeneric = !ALL_KNOWN_PRODUCTS.some(p => l1.includes(p.toLowerCase()));
-                    return (isSpecific || isGeneric) && row.L2 === selL2 && row.L3 === selL3;
-                });
-                
-                finalItem = validRows[0];
-                title.innerText = "Confirm Selection";
-                
-                const descText = finalItem ? (finalItem.description || "No description provided.") : "Description not available for this specific combination.";
-                const combinedReqType = finalItem ? `${finalItem.L1} > ${finalItem.L2} > ${finalItem.L3}` : `${selL1} (Combined) > ${selL2} > ${selL3}`;
-                
-                // DYNAMIC LABEL DETECTION
-                const issueOrInquiryLabel = determineRequestNature(descText);
-
-                container.innerHTML = `
-                    <div class="animate-fade-in p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-                        <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
-                            <div><div class="text-xs text-gray-500 uppercase font-bold mb-1">Product</div><div class="text-gray-900 dark:text-white font-medium">${selL1}</div></div>
-                            <div><div class="text-xs text-gray-500 uppercase font-bold mb-1">Type</div><div class="text-gray-900 dark:text-white font-medium">${selL1Plus}</div></div>
-                            <div><div class="text-xs text-gray-500 uppercase font-bold mb-1">Category</div><div class="text-gray-900 dark:text-white font-medium">${selL2 || '-'}</div></div>
-                            <div><div class="text-xs text-gray-500 uppercase font-bold mb-1">${issueOrInquiryLabel}</div><div class="text-gray-900 dark:text-white font-medium">${selL3 || '-'}</div></div>
-                        </div>
-                        <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-                            <div class="text-xs text-blue-600 dark:text-blue-400 uppercase font-bold mb-1">Full Request Type</div>
-                            <div class="text-gray-900 dark:text-white font-semibold text-sm break-words">${combinedReqType}</div>
-                        </div>
-                        <div class="mb-6">
-                            <div class="text-xs text-gray-500 uppercase font-bold mb-2">Description</div>
-                            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 leading-relaxed text-sm max-h-40 overflow-y-auto shadow-inner">${descText}</div>
-                        </div>
-                        <button onclick="window.useGuideSelection('${selL1}', '${selL1Plus}', '${selL2}', '${selL3}')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors shadow-lg flex justify-center items-center gap-2">${getIcon('Check', 'text-white')} Use This Request Type</button>
-                    </div>
-                `;
-
-            } else {
-                const buttonsHtml = options.map(opt => `
-                    <button onclick="window.handleGuideSelection('${opt.replace(/'/g, "\\'")}')" class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-indigo-500 hover:ring-1 hover:ring-indigo-500 dark:hover:border-indigo-400 transition-all text-left group animate-slide-up">
-                        <div class="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 flex justify-between items-center">
-                            ${opt || "General"}
-                            <span class="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-500">→</span>
-                        </div>
-                    </button>
-                `).join('');
-                container.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-2">${buttonsHtml}</div>`;
-            }
-        }
-
-        // --- GLOBAL EXPORTS ---
-        window.handleThemeToggle = handleThemeToggle;
-        window.fetchData = fetchData;
-        window.openGuide = openGuide;
-        window.closeGuide = closeGuide;
-        window.guideBack = guideBack;
-        window.handleGuideSelection = handleGuideSelection;
-        window.useGuideSelection = useGuideSelection;
-
-        function handleL1Change(event) {
-            selectedL1 = event.target.value;
-            selectedL2 = ''; selectedL3 = ''; currentFinalRequest = null;
-            renderTreePanelOnly();
-        }
-        function handleL2Change(event) {
-            selectedL2 = event.target.value;
-            selectedL3 = ''; 
-            const l3Options = getUniqueOptions('L3', selectedL1, selectedL2);
-            if (l3Options.length === 0) {
-                currentFinalRequest = requestTypesData.find(item => item.L1 === selectedL1 && item.L2 === selectedL2 && (!item.L3 || item.L3.trim() === ""));
-            } else {
-                currentFinalRequest = null;
-            }
-            renderTreePanelOnly();
-        }
-        function handleL3Change(event) {
-            selectedL3 = event.target.value;
-            currentFinalRequest = requestTypesData.find(item => item.L1 === selectedL1 && item.L2 === selectedL2 && item.L3 === selectedL3);
-            renderTreePanelOnly();
-        }
-        function handleResetTree() {
-            selectedL1 = ''; selectedL2 = ''; selectedL3 = '';
-            currentFinalRequest = null;
-            renderTreePanelOnly();
-        }
-        
-        function handleSearchInput(event) {
-            searchTerm = event.target.value;
-            debouncedUpdateSearch(searchTerm);
-        }
-        window.handleSearchInput = handleSearchInput;
-        
-        const debouncedUpdateSearch = debounce((term) => renderSearchResultsOnly(term), 300);
-
-        function updateFooter() {
-            const footer = document.querySelector('footer');
-            if(footer) footer.innerHTML = `Connected to Live Sheet • ${requestTypesData.length} Request Types Loaded • Last Sync: ${new Date().toLocaleTimeString()}`;
-        }
-
-        // --- Rendering Logic ---
-
-        function getCategoryStyle(l1) {
-            const lower = (l1 || '').toLowerCase();
-            
-            // 1. Order Support -> Green (Emerald)
-            if (lower.includes('order')) {
-                return { bg: 'bg-emerald-50/50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', text: 'text-emerald-800 dark:text-emerald-300', icon: 'text-emerald-600 dark:text-emerald-400' };
-            }
-            
-            // 2. Product Support -> Blue
-            if (lower.includes('product')) {
-                return { bg: 'bg-blue-50/50 dark:bg-blue-900/30', border: 'border-blue-200 dark:border-blue-800', text: 'text-blue-800 dark:text-blue-300', icon: 'text-blue-600 dark:text-blue-400' };
-            }
-            
-            // 3. Prospective -> Pink
-            if (lower.includes('prospective')) {
-                return { bg: 'bg-pink-50/50 dark:bg-pink-900/30', border: 'border-pink-200 dark:border-pink-800', text: 'text-pink-800 dark:text-pink-300', icon: 'text-pink-600 dark:text-pink-400' };
-            }
-
-            // 4. Account / Billing -> Orange (Amber)
-            if (lower.includes('account') || lower.includes('billing')) {
-                return { bg: 'bg-amber-50/50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', text: 'text-amber-800 dark:text-amber-300', icon: 'text-amber-600 dark:text-amber-400' };
-            }
-
-            // 5. Accessories -> Light Turquoise (Cyan)
-            if (lower.includes('accessories')) {
-                return { bg: 'bg-cyan-50/50 dark:bg-cyan-900/30', border: 'border-cyan-200 dark:border-cyan-800', text: 'text-cyan-800 dark:text-cyan-300', icon: 'text-cyan-600 dark:text-cyan-400' };
-            }
-
-            // 6. Content -> Indigo
-            if (lower.includes('content')) {
-                return { bg: 'bg-indigo-50/50 dark:bg-indigo-900/30', border: 'border-indigo-200 dark:border-indigo-800', text: 'text-indigo-800 dark:text-indigo-300', icon: 'text-indigo-600 dark:text-indigo-400' };
-            }
-
-            // 7. Shipping / Delivery -> Teal
-            if (lower.includes('shipping') || lower.includes('delivery')) {
-                return { bg: 'bg-teal-50/50 dark:bg-teal-900/30', border: 'border-teal-200 dark:border-teal-800', text: 'text-teal-800 dark:text-teal-300', icon: 'text-teal-600 dark:text-teal-400' };
-            }
-
-            // 8. Miscellaneous -> Slate
-            if (lower.includes('miscellaneous')) {
-                return { bg: 'bg-slate-50/50 dark:bg-slate-800/30', border: 'border-slate-200 dark:border-slate-700', text: 'text-slate-700 dark:text-slate-400', icon: 'text-slate-500 dark:text-slate-400' };
-            }
-
-            // Default
-            return { bg: 'bg-white/50 dark:bg-gray-800/50', border: 'border-gray-200 dark:border-gray-700', text: 'text-indigo-600 dark:text-indigo-400', icon: 'text-indigo-600 dark:text-indigo-400' };
-        }
-
-        // 🧠 SMARTER SCORING: Context & Tree Aware
-        function calculateScore(item, tokens, targetProducts, targetCategories) {
-            let weightedScore = 0;
-            const l3 = (item.L3 || '').toLowerCase();
-            const l2 = (item.L2 || '').toLowerCase();
-            const l1 = (item.L1 || '').toLowerCase();
-            const desc = (item.description || '').toLowerCase();
-            
-            // 1. Determine Product Context of THIS Row
-            let rowContextProduct = null;
-            for(const prod of ALL_KNOWN_PRODUCTS) {
-                if(l1.includes(prod.toLowerCase()) || l2.includes(prod.toLowerCase())) {
-                    rowContextProduct = prod;
-                    break;
-                }
-            }
-
-            // 2. PRODUCT CROSS-CHECK (The "Mismatch" Killer)
-            if (targetProducts.length > 0) {
-                if (rowContextProduct) {
-                    const rowProdNorm = rowContextProduct.toLowerCase();
-                    const isTargetMatch = targetProducts.some(tp => tp.toLowerCase() === rowProdNorm);
-                    
-                    if (isTargetMatch) {
-                        weightedScore += 40; // REDUCED Boost (was 100) to allow specific keywords to matter more
-                    } else {
-                        // Mismatch Penalty
-                        return { ...item, displayPercent: 0, sortScore: 0 }; 
-                    }
-                } else {
-                    // Generic Row Safety Boost
-                    weightedScore += 10; // REDUCED Safety Boost (was 20)
-                }
-            }
-
-            // 3. TREE DEPTH WEIGHTING & COVERAGE TRACKING
-            let matchesFound = 0;
-            
-            tokens.forEach(token => {
-                const stem = simpleStem(token);
-                // Base Frequency Weight
-                const freq = wordFrequency[stem] || 1;
-                const weight = Math.log(totalDocuments / (freq + 1)) + 1; 
-
-                let tokenMatched = false;
-
-                // L1: Main Category (HIGHEST PRIORITY = 20)
-                if (matchesToken(l1, token) || matchesToken(l1, stem)) {
-                    weightedScore += weight * 20; 
-                    tokenMatched = true;
-                }
-                
-                // L2: Sub-Category (MEDIUM PRIORITY = 15)
-                if (matchesToken(l2, token) || matchesToken(l2, stem)) {
-                    weightedScore += weight * 15;
-                    tokenMatched = true;
-                }
-                
-                // L3: Specific Issue (MEDIUM PRIORITY = 15)
-                if (matchesToken(l3, token) || matchesToken(l3, stem)) {
-                    weightedScore += weight * 15;
-                    tokenMatched = true;
-                }
-                
-                // Description: Context (LOW PRIORITY = 5)
-                if (matchesToken(desc, token) || matchesToken(desc, stem)) {
-                    weightedScore += weight * 5;
-                    tokenMatched = true;
-                }
-
-                if (tokenMatched) matchesFound++;
-            });
-
-            // 4. ACCURACY PENALTY (New)
-            // If you searched for 3 words and we only found 2, the score is multiplied by (2/3)^2 = 0.44
-            // This massively penalizes results that miss a keyword (like "Pause").
-            if (tokens.length > 0) {
-                const coverageRatio = matchesFound / tokens.length;
-                weightedScore = weightedScore * (coverageRatio * coverageRatio);
-            }
-
-            // Adjusted maxRef
-            const maxRef = 100; 
-            const normalizedScore = Math.min(100, Math.round((weightedScore / maxRef) * 100));
-            return { ...item, displayPercent: normalizedScore, sortScore: weightedScore };
-        }
-
-        function renderCard(req, score = null, isBestFit = false) {
-            const fullTree = [req.L1, req.L2, req.L3].filter(Boolean).join(' > ');
-            const style = getCategoryStyle(req.L1);
-            let scoreBadge = '';
-            if (score !== null) {
-                let badgeColor = 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
-                if (score >= 80) badgeColor = 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200';
-                else if (score >= 50) badgeColor = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200';
-                
-                // UPDATED BADGE: Checks isBestFit flag passed from search logic
-                scoreBadge = `<div class="flex items-center gap-2 flex-shrink-0 ml-2">${isBestFit ? `<span class="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-full border border-indigo-200 dark:border-indigo-800 whitespace-nowrap">${getIcon('Star')} Best Fit</span>` : ''}<span class="text-xs font-bold px-2 py-1 rounded-full ${badgeColor} whitespace-nowrap">${score}% Fit</span></div>`;
-            }
-            const cardClass = isBestFit ? `best-match relative z-10 shadow-lg ${style.border}` : `${style.border}`;
-
-            return `
-                <div class="${style.bg} backdrop-blur-sm p-5 rounded-xl shadow-sm border hover:shadow-md transition-all ${cardClass}">
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="${style.text} text-sm font-bold tracking-wide break-words leading-snug w-full pr-2">${fullTree}</div>
-                        ${scoreBadge}
-                    </div>
-                    <div class="flex items-start gap-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
-                        <div class="mt-1 flex-shrink-0">${getIcon('Check', style.icon)}</div>
-                        <div class="w-full">
-                            <div class="text-base text-gray-700 dark:text-gray-200 leading-relaxed">
-                                <span class="font-semibold text-gray-900 dark:text-white block mb-1">Description:</span>
-                                ${req.description || "No description provided."}
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-        }
-
-        function renderDropdown(id, label, options, selected, enabled) {
-            const opts = options.map(o => `<option value="${o}" ${o === selected ? 'selected' : ''}>${o}</option>`).join('');
-            return `
-                <div class="flex flex-col space-y-1">
-                    <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">${label}</label>
-                    <select id="${id}" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${!enabled ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500' : ''}" ${!enabled ? 'disabled' : ''}>
-                        <option value="" disabled ${!selected ? 'selected' : ''}>${!enabled && options.length === 0 ? 'N/A' : 'Select...'}</option>
-                        ${opts}
-                    </select>
-                </div>`;
-        }
-
-        // --- NEW: Separate Rendering Layers ---
-
-        function renderShell() {
-            // Remove onclick="..." attributes from the HTML string to avoid scope issues
-            appDiv.innerHTML = `
-                <div id="main-interface" class="max-w-5xl mx-auto space-y-8 pb-12 animate-fade-in relative">
-                    <div id="guide-modal" class="fixed inset-0 z-[100] hidden">
-                        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="window.closeGuide()"></div>
-                        <div class="absolute inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 bg-white dark:bg-gray-900 sm:rounded-2xl shadow-2xl p-6 w-full sm:w-[600px] max-h-[80vh] flex flex-col transform transition-all duration-300">
-                            <div class="flex justify-between items-center mb-6">
-                                <button id="guide-back-btn" onclick="window.guideBack()" class="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors invisible">
-                                    ${getIcon('ChevronLeft')}
-                                </button>
-                                <h3 id="guide-title" class="text-lg font-bold text-gray-900 dark:text-white text-center flex-1">Select Level 1</h3>
-                                <button onclick="window.closeGuide()" class="p-2 -mr-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors">
-                                    ${getIcon('X')}
-                                </button>
-                            </div>
-                            <div id="guide-content" class="flex-1 overflow-y-auto min-h-[300px]">
-                                <!-- Buttons will be injected here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <header class="border-b dark:border-gray-700 pb-4">
-                        <div class="flex justify-center mb-4 h-16 items-center">
-                             <img src="${LOGO_URL}" alt="Tempo Fitness" class="h-16 w-auto object-contain mix-blend-multiply dark:mix-blend-normal dark:brightness-0 dark:invert" onerror="this.style.display='none'; document.getElementById('logo-text-fallback').style.display='block';" />
-                             <div id="logo-text-fallback" style="display:none;" class="text-2xl font-black tracking-tighter text-gray-800 dark:text-white logo-text">TEMPO</div>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Request Type Helper</h1>
-                            <div class="flex gap-2 sm:gap-3">
-                                <button id="guide-btn" onclick="window.openGuide()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 px-4 rounded-lg inline-flex items-center transition-colors shadow-sm cursor-pointer border border-transparent">
-                                    ${getIcon('Compass', 'text-white')} <span class="ml-2 hidden sm:inline">Guide</span>
-                                </button>
-                                <button id="theme-btn" onclick="window.handleThemeToggle()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors cursor-pointer">${isDarkMode ? getIcon('Sun') : getIcon('Moon')}</button>
-                                <button id="refresh-btn" onclick="window.fetchData()" class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-semibold py-2 px-4 rounded-lg inline-flex items-center transition-colors border border-gray-300 dark:border-gray-600 shadow-sm cursor-pointer">${getIcon('Refresh')} <span class="ml-2 hidden sm:inline">Refresh</span></button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <main class="flex flex-col gap-8">
-                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <h2 class="font-bold text-gray-700 dark:text-gray-200 mb-3 text-lg">Keyword Search</h2>
-                            <div class="relative">
-                                <input id="search-input" oninput="window.handleSearchInput(event)" type="text" placeholder="Search with the customer's inquiry or describe the issue..." class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white outline-none placeholder-gray-500 dark:placeholder-gray-400 transition-all shadow-sm" />
-                                <div class="absolute left-3 top-3.5">${getIcon('Search')}</div>
-                            </div>
-                            <div id="search-results-area"></div>
-                        </div>
-
-                        <section id="tree-panel-area" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"></section>
-                    </main>
-                    
-                    <footer class="text-center text-xs text-gray-400 dark:text-gray-500">Connected to Live Sheet • ${requestTypesData.length} Request Types Loaded</footer>
-                </div>
-            `;
-            
-            // Set initial state of search input if re-rendering
-            const searchInput = document.getElementById('search-input');
-            if(searchInput) searchInput.value = searchTerm;
-            
-            isLayoutLoaded = true;
-        }
-
-        function renderSearchResultsOnly(currentSearchTerm = searchTerm) {
-            const container = document.getElementById('search-results-area');
-            if(!container) return;
-
-            const normalizedTerm = currentSearchTerm.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g," ");
-            const tokens = normalizedTerm.split(/\s+/).filter(t => t.length > 2 && !STOP_WORDS.has(t)); 
-            
-            // Step 1: Detect User Intent
-            const targetProducts = [];
-            const targetCategories = [];
-            
-            tokens.forEach(t => {
-                const stemT = simpleStem(t);
-                if (CONCEPT_MAP[t]) {
-                    if(CONCEPT_MAP[t].type === 'product') targetProducts.push(CONCEPT_MAP[t].term);
-                    if(CONCEPT_MAP[t].type === 'category') targetCategories.push(CONCEPT_MAP[t].term);
-                } else if (CONCEPT_MAP[stemT]) {
-                    if(CONCEPT_MAP[stemT].type === 'product') targetProducts.push(CONCEPT_MAP[stemT].term);
-                    if(CONCEPT_MAP[stemT].type === 'category') targetCategories.push(CONCEPT_MAP[stemT].term);
-                }
-            });
-
-            // Step 2: Score Everything
-            let searchResults = [];
-            
-            if (tokens.length > 0) {
-                searchResults = requestTypesData
-                    .map(item => calculateScore(item, tokens, targetProducts, targetCategories))
-                    .filter(item => item.displayPercent > 5)
-                    .sort((a, b) => b.sortScore - a.sortScore);
-            }
-
-            // Step 3: Determine "Best Fit" (Up to 3, must be close to top score)
-            let topScore = 0;
-            if (searchResults.length > 0) {
-                topScore = searchResults[0].sortScore;
-                
-                // Map results to add 'isBestFit' flag
-                searchResults = searchResults.map((item, index) => {
-                    // To be a Best Fit, you must:
-                    // 1. Be in the top 3 results (index < 3)
-                    // 2. Have a score that is at least 90% of the top score (Proximity check)
-                    // This creates the behavior: Multiple stars if close, Single star if one dominates.
-                    const isBestFit = index < 3 && item.sortScore >= (topScore * 0.9);
-                    return { ...item, isBestFit };
-                });
-
-                if (searchResults[0].displayPercent > 85) searchResults = searchResults.filter(r => r.displayPercent >= 30);
-                searchResults = searchResults.slice(0, 12); 
-            }
-
-            let resultsHtml = '';
-            if (searchResults.length > 0) {
-                resultsHtml = `<div class="mt-4 space-y-4"><p class="text-sm text-gray-500 dark:text-gray-400">Found ${searchResults.length} relevant results.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto results-scroll pr-1">${searchResults.map((req) => renderCard(req, req.displayPercent, req.isBestFit)).join('')}</div></div>`;
-            } else if (tokens.length > 0) {
-                resultsHtml = `<div class="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl mt-4 border border-gray-100 dark:border-gray-700">${getIcon('Search')}<p class="mt-2 text-lg font-semibold text-gray-700 dark:text-gray-200">No matches found</p><p class="text-sm text-gray-500 dark:text-gray-400">Try broad keywords or select from the list below.</p></div>`;
-            } else {
-                 resultsHtml = `<div class="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl mt-4 border border-gray-100 dark:border-gray-700"><div class="inline-block p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-full mb-2 text-indigo-500">${getIcon('Search')}</div><p class="mt-2 text-lg font-semibold text-gray-700 dark:text-gray-200">Inquiry Search</p><p class="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">Search with the customer's inquiry or describe the issue.</p></div>`;
-            }
-            
-            container.innerHTML = resultsHtml;
-        }
-
-        function renderTreePanelOnly() {
-            const container = document.getElementById('tree-panel-area');
-            if(!container) return;
-
-            const l1Opts = getUniqueOptions('L1');
-            const l2Opts = getUniqueOptions('L2', selectedL1);
-            const l3Opts = getUniqueOptions('L3', selectedL1, selectedL2);
-
-            container.innerHTML = `
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="font-bold text-gray-700 dark:text-gray-200 text-lg">Request Type Tree</h2>
-                    <button id="reset-tree-btn" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 text-xs font-semibold py-1.5 px-3 rounded inline-flex items-center transition-colors">${getIcon('X')} <span class="ml-1">Reset Selection</span></button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    ${renderDropdown('l1-select', 'Level 1', l1Opts, selectedL1, true)}
-                    ${renderDropdown('l2-select', 'Level 2', l2Opts, selectedL2, !!selectedL1)}
-                    ${renderDropdown('l3-select', 'Level 3', l3Opts, selectedL3, selectedL2 && l3Opts.length > 0)}
-                </div>
-                ${currentFinalRequest ? `<div class="border-t dark:border-gray-700 pt-6 animate-fade-in"><h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Selected Details</h3>${renderCard(currentFinalRequest)}</div>` : ''}
-            `;
-
-            document.getElementById('l1-select')?.addEventListener('change', handleL1Change);
-            document.getElementById('l2-select')?.addEventListener('change', handleL2Change);
-            document.getElementById('l3-select')?.addEventListener('change', handleL3Change);
-            document.getElementById('reset-tree-btn')?.addEventListener('click', handleResetTree);
-        }
-
-        function renderApp() {
-            if (isLoading) {
-                appDiv.innerHTML = `<div class="flex flex-col items-center justify-center h-64 gap-4">${getIcon('Loader')}<span>Loading Request Data...</span></div>`;
-                return;
-            }
-            if (errorMsg) {
-                appDiv.innerHTML = `<div class="p-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 rounded-xl text-center flex flex-col items-center"><p class="font-bold text-lg">Connection Error</p><p class="mt-2 mb-4 text-sm">${errorMsg}</p><button id="refresh-btn-err" class="bg-red-100 hover:bg-red-200 text-red-800 font-bold py-2 px-4 rounded inline-flex items-center transition-colors text-sm">${getIcon('Refresh')} <span class="ml-2">Retry Connection</span></button></div>`;
-                document.getElementById('refresh-btn-err')?.addEventListener('click', fetchData);
-                return;
-            }
-
-            if (!isLayoutLoaded) {
-                renderShell();
-            }
-
-            renderSearchResultsOnly();
-            renderTreePanelOnly();
-        }
-
-        fetchData();
-        setInterval(() => fetchData(true), AUTO_REFRESH_INTERVAL);
-    </script>
+          const guideText = await fetchWithRetry(GUIDE_SHEET_CSV_URL + '&t=' + ts);
+          const guideRows = parseCSV(guideText);
+          guideData = guideRows.slice(1).map(r=>({
+            L1: (r[0]||'').trim(),
+            L1Plus: (r[1]||'').trim(),
+            L2: (r[2]||'').trim(),
+            L3: (r[3]||'').trim()
+          })).filter(x=>x && x.L1);
+        } catch(e){ console.warn('Guide load failed', e); }
+      }
+
+      if(newData.length === 0) throw new Error('No data found.');
+      requestTypesData = newData;
+      buildSearchIndex(requestTypesData);
+      isLoading = false;
+      renderApp();
+      updateFooter();
+    } catch(err){
+      if(!isBackground){
+        isLoading = false;
+        errorMsg = err.message || String(err);
+        renderApp();
+      } else {
+        console.warn('Background sync failed', err);
+      }
+    } finally {
+      if(isBackground){
+        const refreshIcon = document.querySelector('#refresh-btn svg');
+        if(refreshIcon) refreshIcon.classList.remove('animate-spin');
+      }
+    }
+  }
+
+  // -----------------------
+  // UI helpers
+  // -----------------------
+  function debounce(fn, delay){
+    let t;
+    return function(...a){ clearTimeout(t); t = setTimeout(()=>fn.apply(this,a), delay); };
+  }
+
+  function getUniqueOptions(key, filterL1='', filterL2=''){
+    let data = requestTypesData;
+    if(filterL1) data = data.filter(d=>d.L1 === filterL1);
+    if(filterL2) data = data.filter(d=>d.L2 === filterL2);
+    const seen = new Set(); const out = [];
+    for(const r of data){
+      const v = r[key];
+      if(v && !seen.has(v)){ seen.add(v); out.push(v); }
+    }
+    return out;
+  }
+
+  function handleThemeToggle(){
+    isDarkMode = !isDarkMode;
+    if(isDarkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
+    try { localStorage.setItem('theme', isDarkMode ? 'dark' : 'light'); } catch(e){}
+    const btn = document.getElementById('theme-btn'); if(btn) btn.innerHTML = isDarkMode ? getIcon('Sun') : getIcon('Moon');
+  }
+
+  // -----------------------
+  // Guide modal + copy function
+  // -----------------------
+  function handleEscPress(e){ if(e.key === 'Escape') closeGuide(); }
+
+  function openGuide(){
+    if(guideData.length === 0){ alert('Guide data not loaded. Please check the CSV URL.'); return; }
+    guideStack = [];
+    renderGuideStep();
+    document.getElementById('guide-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscPress);
+  }
+  function closeGuide(){
+    document.getElementById('guide-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', handleEscPress);
+  }
+  function guideBack(){
+    if(guideStack.length>0){ guideStack.pop(); renderGuideStep(); }
+  }
+  function handleGuideSelection(value){ guideStack.push(value); renderGuideStep(); }
+
+  // New: copy selected request type + description
+  function copyGuideSelection(gL1, gL1Plus, gL2, gL3, autoClose = true){
+    const combined = [gL1, gL2, gL3].filter(Boolean).join(' > ');
+    const match = requestTypesData.find(r => r.L1 === gL1 && r.L2 === gL2 && r.L3 === gL3);
+    const desc = match ? match.description : '';
+    const text = combined + (desc ? '\n\n' + desc : '');
+    if(!text || text.trim() === ''){ alert('Nothing to copy for this selection.'); return; }
+
+    const write = (txt) => {
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        return navigator.clipboard.writeText(txt);
+      } else {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ta.remove(); return Promise.resolve(); } catch(e){ ta.remove(); return Promise.reject(e); }
+      }
+    };
+
+    write(text).then(()=>{
+      showCopyToast('Copied request type to clipboard');
+      if(autoClose) closeGuide();
+    }).catch(err=>{
+      // fallback prompt
+      try {
+        window.prompt('Copy the text below (Ctrl/Cmd+C):', text);
+      } catch(e){}
+    });
+  }
+
+  function showCopyToast(msg){
+    const id = 'copy-toast';
+    let el = document.getElementById(id);
+    if(!el){ el = document.createElement('div'); el.id = id; el.className = 'fixed bottom-6 right-6 bg-black/80 text-white text-sm py-2 px-4 rounded-lg shadow-lg z-[9999]'; el.style.opacity = '0'; el.style.transition = 'opacity 200ms ease'; document.body.appendChild(el); }
+    el.textContent = msg;
+    requestAnimationFrame(()=> el.style.opacity = '1');
+    clearTimeout(el._hideTO);
+    el._hideTO = setTimeout(()=> el.style.opacity = '0', 1600);
+  }
+
+  // keep original useGuideSelection around in case other code expects it (no-op compared to copy)
+  function useGuideSelection(gL1, gL1Plus, gL2, gL3){
+    // original behaviour: reset tree and close guide
+    selectedL1 = ''; selectedL2 = ''; selectedL3 = ''; currentFinalRequest = null;
+    closeGuide();
+    renderTreePanelOnly();
+  }
+
+  function determineRequestNature(description){
+    if(!description) return 'Issue or Inquiry';
+    const d = description.toLowerCase();
+    const inquiry = ['how to','question','inquiry','info','status','track','where is','clarify','update'];
+    const issue = ['broken','damaged','error','fail','not working','issue','problem','defect','refund','return','cancel'];
+    if(issue.some(k=>d.includes(k))) return 'Issue';
+    if(inquiry.some(k=>d.includes(k))) return 'Inquiry';
+    return 'Issue or Inquiry';
+  }
+
+  // -----------------------
+  // Guide rendering
+  // -----------------------
+  function renderGuideStep(){
+    const container = document.getElementById('guide-content');
+    const title = document.getElementById('guide-title');
+    const backBtn = document.getElementById('guide-back-btn');
+    if(!container) return;
+
+    const currentLevel = guideStack.length + 1;
+    const selL1 = guideStack[0];
+    const selL1Plus = guideStack[1];
+    const selL2 = guideStack[2];
+
+    if(currentLevel > 1) backBtn.classList.remove('invisible'); else backBtn.classList.add('invisible');
+
+    let options = [];
+    let isFinal = false;
+    let finalItem = null;
+
+    if(currentLevel === 1){
+      title.innerText = 'Select Product';
+      options = Array.from(new Set(guideData.map(r=>r.L1))).filter(Boolean);
+    } else if(currentLevel === 2){
+      title.innerText = `Select Type for ${selL1}`;
+      options = Array.from(new Set(guideData.filter(r=>r.L1===selL1).map(r=>r.L1Plus)));
+      if(options.length === 1 && !options[0]){ guideStack.push(''); renderGuideStep(); return; }
+    } else if(currentLevel === 3){
+      title.innerText = 'Select Category';
+      options = Array.from(new Set(guideData.filter(r=>r.L1===selL1 && r.L1Plus===selL1Plus).map(r=>r.L2)));
+      if(options.length === 0 || (options.length === 1 && !options[0])) isFinal = true;
+    } else if(currentLevel === 4){
+      title.innerText = 'Select Issue or Inquiry';
+      options = Array.from(new Set(guideData.filter(r=>r.L1===selL1 && r.L1Plus===selL1Plus && r.L2===selL2).map(r=>r.L3)));
+      if(options.length === 0 || (options.length === 1 && !options[0])) isFinal = true;
+    } else {
+      isFinal = true;
+    }
+
+    if(isFinal){
+      const selL3 = guideStack[3] || '';
+      const categoryObj = GUIDE_L1_PLUS_OPTIONS.find(c => c.label === selL1Plus);
+      const categoryKeywords = categoryObj ? categoryObj.keywords : [ (selL1Plus||'').toLowerCase() ];
+
+      const validRows = requestTypesData.filter(row=>{
+        const l1 = (row.L1||'').toLowerCase();
+        const prod = (selL1||'').toLowerCase();
+        const matchesKeyword = categoryKeywords.some(k => l1.includes(k));
+        if(!matchesKeyword) return false;
+        const isSpecific = l1.includes(prod);
+        const isGeneric = !ALL_KNOWN_PRODUCTS.some(p => l1.includes((p||'').toLowerCase()));
+        return (isSpecific || isGeneric) && row.L2 === selL2 && row.L3 === selL3;
+      });
+
+      finalItem = validRows[0] || null;
+      title.innerText = 'Confirm Selection';
+      const descText = finalItem ? (finalItem.description || 'No description provided.') : 'Description not available for this specific combination.';
+      const combinedReqType = finalItem ? `${finalItem.L1} > ${finalItem.L2} > ${finalItem.L3}` : `${selL1} (Combined) > ${selL2} > ${selL3}`;
+      const issueOrInquiryLabel = determineRequestNature(descText);
+
+      container.innerHTML = `
+        <div class="animate-fade-in p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+            <div><div class="text-xs text-gray-500 uppercase font-bold mb-1">Product</div><div class="text-gray-900 dark:text-white font-medium">${escapeHtml(selL1||'-')}</div></div>
+            <div><div class="text-xs text-gray-500 uppercase font-bold mb-1">Type</div><div class="text-gray-900 dark:text-white font-medium">${escapeHtml(selL1Plus||'-')}</div></div>
+            <div><div class="text-xs text-gray-500 uppercase font-bold mb-1">Category</div><div class="text-gray-900 dark:text-white font-medium">${escapeHtml(selL2||'-')}</div></div>
+            <div><div class="text-xs text-gray-500 uppercase font-bold mb-1">${escapeHtml(issueOrInquiryLabel)}</div><div class="text-gray-900 dark:text-white font-medium">${escapeHtml(selL3||'-')}</div></div>
+          </div>
+
+          <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+            <div class="text-xs text-blue-600 dark:text-blue-400 uppercase font-bold mb-1">Full Request Type</div>
+            <div class="text-gray-900 dark:text-white font-semibold text-sm break-words">${escapeHtml(combinedReqType)}</div>
+          </div>
+
+          <div class="mb-6">
+            <div class="text-xs text-gray-500 uppercase font-bold mb-2">Description</div>
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 leading-relaxed text-sm max-h-40 overflow-auto">
+              ${escapeHtml(descText)}
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <button id="copy-guide-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg">Copy Request Type</button>
+            <button id="use-guide-btn" class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg">Use (reset tree) — original behavior</button>
+          </div>
+        </div>
+      `;
+
+      // wire buttons
+      document.getElementById('copy-guide-btn').addEventListener('click', ()=>{
+        copyGuideSelection(selL1||'', selL1Plus||'', selL2||'', selL3||'', true);
+      });
+      document.getElementById('use-guide-btn').addEventListener('click', ()=>{
+        useGuideSelection(selL1||'', selL1Plus||'', selL2||'', selL3||'');
+      });
+
+    } else {
+      const buttonsHtml = options.map(opt=>{
+        const label = opt || 'General';
+        return `<button class="group p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-indigo-300 dark:hover:border-indigo-600 text-left" data-val="${escapeHtml(opt||'')}">
+          <div class="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 flex justify-between items-center">
+            ${escapeHtml(label)}
+            <span class="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-500">→</span>
+          </div>
+        </button>`;
+      }).join('');
+      container.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-2">${buttonsHtml}</div>`;
+
+      // attach click handlers
+      Array.from(container.querySelectorAll('button[data-val]')).forEach(btn=>{
+        btn.addEventListener('click', ()=> handleGuideSelection(btn.getAttribute('data-val')));
+      });
+    }
+  }
+
+  // simple HTML escape for injected values
+  function escapeHtml(str){
+    if(str === null || str === undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  }
+
+  // -----------------------
+  // Search scoring + results
+  // -----------------------
+  function calculateScore(item, tokens, targetProducts, targetCategories){
+    let weighted = 0;
+    const l3 = (item.L3||'').toLowerCase();
+    const l2 = (item.L2||'').toLowerCase();
+    const l1 = (item.L1||'').toLowerCase();
+    const desc = (item.description||'').toLowerCase();
+
+    let rowContextProduct = null;
+    for(const p of ALL_KNOWN_PRODUCTS){ if(l1.includes(p.toLowerCase()) || l2.includes(p.toLowerCase())) { rowContextProduct = p; break; } }
+
+    if(targetProducts.length > 0){
+      if(rowContextProduct){
+        const rowProdNorm = rowContextProduct.toLowerCase();
+        const isTargetMatch = targetProducts.some(tp => tp.toLowerCase() === rowProdNorm);
+        if(isTargetMatch) weighted += 40; else return { ...item, displayPercent:0, sortScore:0 };
+      } else weighted += 10;
+    }
+
+    let matchesFound = 0;
+    tokens.forEach(token=>{
+      const stem = simpleStem(token);
+      const freq = wordFrequency[stem] || 1;
+      const weight = Math.log(Math.max(1, totalDocuments) / (freq + 1)) + 1;
+      let tokenMatched = false;
+      if(matchesToken(l1, token) || matchesToken(l1, stem)){ weighted += weight * 20; tokenMatched = true; }
+      if(matchesToken(l2, token) || matchesToken(l2, stem)){ weighted += weight * 15; tokenMatched = true; }
+      if(matchesToken(l3, token) || matchesToken(l3, stem)){ weighted += weight * 15; tokenMatched = true; }
+      if(matchesToken(desc, token) || matchesToken(desc, stem)){ weighted += weight * 5; tokenMatched = true; }
+      if(tokenMatched) matchesFound++;
+    });
+
+    if(tokens.length > 0){
+      const ratio = matchesFound / tokens.length;
+      weighted = weighted * (ratio * ratio);
+    }
+
+    const maxRef = 100;
+    const normalizedScore = Math.min(100, Math.round((weighted / maxRef) * 100));
+    return { ...item, displayPercent: normalizedScore, sortScore: weighted };
+  }
+
+  function renderCard(req, score = null, isBest=false){
+    const full = [req.L1, req.L2, req.L3].filter(Boolean).join(' > ');
+    const badge = score !== null ? `<span class="px-2 py-1 text-xs rounded bg-gray-100">${score}%</span>` : '';
+    return `
+      <div class="p-5 rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm">
+        <div class="flex justify-between items-start mb-3">
+          <div class="text-sm font-bold">${escapeHtml(full)}</div>
+          ${badge}
+        </div>
+        <div class="text-sm text-gray-700 dark:text-gray-200">${escapeHtml(req.description || 'No description provided.')}</div>
+      </div>`;
+  }
+
+  // -----------------------
+  // Rendering: Shell / Search / Tree
+  // -----------------------
+  function renderShell(){
+    appDiv.innerHTML = `
+      <div id="main-interface" class="max-w-5xl mx-auto space-y-8 pb-12 animate-fade-in relative">
+        <div id="guide-modal" class="fixed inset-0 z-[100] hidden">
+          <div class="absolute inset-0 bg-black/60" onclick="window.closeGuide && window.closeGuide()"></div>
+          <div class="absolute inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 bg-white dark:bg-gray-900 sm:rounded-2xl shadow-2xl p-6 w-full max-w-2xl">
+            <div class="flex justify-between items-center mb-6">
+              <button id="guide-back-btn" class="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 invisible">${getIcon('ChevronLeft')}</button>
+              <h3 id="guide-title" class="text-lg font-bold text-gray-900 dark:text-white text-center flex-1">Select Level 1</h3>
+              <button id="guide-close" class="p-2 -mr-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">${getIcon('X')}</button>
+            </div>
+            <div id="guide-content" class="flex-1 overflow-y-auto min-h-[300px]">
+            </div>
+          </div>
+        </div>
+
+        <header class="border-b dark:border-gray-700 pb-4">
+          <div class="flex justify-center mb-4 h-16 items-center">
+            <img src="${LOGO_URL}" alt="Logo" class="h-16 w-auto object-contain" onerror="this.style.display='none'"/>
+          </div>
+          <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Request Type Helper</h1>
+            <div class="flex gap-2">
+              <button id="guide-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 px-4 rounded-lg inline-flex items-center">${getIcon('Compass','text-white')}<span class="ml-2 hidden sm:inline">Guide</span></button>
+              <button id="theme-btn" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">${getIcon('Sun')}</button>
+              <button id="refresh-btn" class="bg-white dark:bg-gray-800 py-2 px-3 rounded-lg">${getIcon('Refresh') || ''}</button>
+            </div>
+          </div>
+        </header>
+
+        <main class="flex flex-col gap-8">
+          <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <h2 class="font-bold text-gray-700 dark:text-gray-200 mb-3 text-lg">Keyword Search</h2>
+            <div class="relative">
+              <input id="search-input" oninput="window.handleSearchInput && window.handleSearchInput(event)" type="text" placeholder="Search with the customer's inquiry or describe the issue..." class="w-full p-4 pl-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"/>
+              <div class="absolute left-3 top-3">${getIcon('Search')}</div>
+            </div>
+            <div id="search-results-area" class="mt-4"></div>
+          </div>
+
+          <section id="tree-panel-area" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"></section>
+        </main>
+
+        <footer class="text-center text-xs text-gray-400 dark:text-gray-500">Connected to Live Sheet • ${requestTypesData.length} Request Types Loaded</footer>
+      </div>
+    `;
+
+    // attach guide modal controls
+    document.getElementById('guide-btn').addEventListener('click', openGuide);
+    document.getElementById('guide-close').addEventListener('click', closeGuide);
+    document.getElementById('guide-back-btn').addEventListener('click', guideBack);
+    document.getElementById('theme-btn').addEventListener('click', handleThemeToggle);
+    document.getElementById('refresh-btn').addEventListener('click', ()=> fetchData(false));
+    isLayoutLoaded = true;
+  }
+
+  function renderSearchResultsOnly(currentSearchTerm = searchTerm){
+    const container = document.getElementById('search-results-area');
+    if(!container) return;
+    const normalized = (currentSearchTerm || '').toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g," ");
+    const tokens = normalized.split(/\s+/).filter(t=>t.length>2 && !STOP_WORDS.has(t));
+    const targetProducts = [], targetCategories = [];
+    tokens.forEach(t=>{
+      const s = simpleStem(t);
+      if(CONCEPT_MAP[t]) { if(CONCEPT_MAP[t].type==='product') targetProducts.push(CONCEPT_MAP[t].term); if(CONCEPT_MAP[t].type==='category') targetCategories.push(CONCEPT_MAP[t].term); }
+      else if(CONCEPT_MAP[s]) { if(CONCEPT_MAP[s].type==='product') targetProducts.push(CONCEPT_MAP[s].term); if(CONCEPT_MAP[s].type==='category') targetCategories.push(CONCEPT_MAP[s].term); }
+    });
+
+    let searchResults = [];
+    if(tokens.length > 0){
+      searchResults = requestTypesData.map(item => calculateScore(item, tokens, targetProducts, targetCategories))
+        .filter(i => i.displayPercent > 5)
+        .sort((a,b) => b.sortScore - a.sortScore);
+    }
+
+    if(searchResults.length > 0){
+      const topScore = searchResults[0].sortScore || 0;
+      searchResults = searchResults.map((it, idx) => ({...it, isBestFit: idx < 3 && it.sortScore >= (topScore * 0.9)})).slice(0,12);
+      container.innerHTML = `<div class="mt-4 space-y-4"><p class="text-sm text-gray-500 dark:text-gray-400">Found ${searchResults.length} relevant results.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-4">${searchResults.map(r=>renderCard(r, r.displayPercent, r.isBestFit)).join('')}</div></div>`;
+    } else if(tokens.length > 0){
+      container.innerHTML = `<div class="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl mt-4 border border-gray-100 dark:border-gray-700">${getIcon('Search')}<p class="mt-2 text-lg font-semibold">No results found</p></div>`;
+    } else {
+      container.innerHTML = `<div class="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl mt-4 border border-gray-100 dark:border-gray-700"><div class="inline-block p-3 bg-indigo-50 rounded-xl">${getIcon('Search')}</div><p class="mt-3 text-sm text-gray-500">Start typing to search...</p></div>`;
+    }
+  }
+
+  function renderTreePanelOnly(){
+    const container = document.getElementById('tree-panel-area');
+    if(!container) return;
+    const l1 = getUniqueOptions('L1');
+    const l2 = getUniqueOptions('L2', selectedL1);
+    const l3 = getUniqueOptions('L3', selectedL1, selectedL2);
+
+    container.innerHTML = `
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-gray-700 dark:text-gray-200 text-lg">Request Type Tree</h2>
+        <button id="reset-tree-btn" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 text-xs font-semibold py-1.5 px-3 rounded">Reset</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        ${renderDropdown('l1-select','Level 1', l1, selectedL1, true)}
+        ${renderDropdown('l2-select','Level 2', l2, selectedL2, !!selectedL1)}
+        ${renderDropdown('l3-select','Level 3', l3, selectedL3, selectedL2 && l3.length > 0)}
+      </div>
+      ${currentFinalRequest ? `<div class="border-t dark:border-gray-700 pt-6 animate-fade-in"><h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Selected Request Type</h3>
+        ${renderCard(currentFinalRequest, null, false)}</div>` : ''}
+    `;
+
+    document.getElementById('l1-select')?.addEventListener('change', handleL1Change);
+    document.getElementById('l2-select')?.addEventListener('change', handleL2Change);
+    document.getElementById('l3-select')?.addEventListener('change', handleL3Change);
+    document.getElementById('reset-tree-btn')?.addEventListener('click', handleResetTree);
+  }
+
+  function renderDropdown(id,label,options,selected,enabled){
+    const opts = options.map(o => `<option value="${escapeHtml(o)}" ${o===selected ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('');
+    return `
+      <div>
+        <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">${escapeHtml(label)}</label>
+        <select id="${id}" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" ${!enabled ? 'disabled' : ''}>
+          <option value="" ${!selected ? 'selected' : ''}>${!enabled && options.length === 0 ? 'N/A' : 'Select...'}</option>
+          ${opts}
+        </select>
+      </div>
+    `;
+  }
+
+  function renderApp(){
+    if(isLoading){
+      appDiv.innerHTML = `<div class="flex flex-col items-center justify-center h-64 gap-4">${getIcon('Loader')}<span>Loading Request Data...</span></div>`;
+      return;
+    }
+    if(errorMsg){
+      appDiv.innerHTML = `<div class="p-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 rounded-xl text-center">${escapeHtml(errorMsg)}<div class="mt-4"><button id="refresh-btn-err" class="px-4 py-2 bg-indigo-600 text-white rounded">Retry</button></div></div>`;
+      document.getElementById('refresh-btn-err')?.addEventListener('click', ()=> fetchData(false));
+      return;
+    }
+    if(!isLayoutLoaded) renderShell();
+    renderSearchResultsOnly();
+    renderTreePanelOnly();
+  }
+
+  // -----------------------
+  // Tree handlers
+  // -----------------------
+  function handleL1Change(e){ selectedL1 = e.target.value; selectedL2 = ''; selectedL3 = ''; currentFinalRequest = null; renderTreePanelOnly(); }
+  function handleL2Change(e){ selectedL2 = e.target.value; selectedL3 = ''; const l3opts = getUniqueOptions('L3', selectedL1, selectedL2); if(l3opts.length===0){ currentFinalRequest = requestTypesData.find(i=>i.L1===selectedL1 && i.L2===selectedL2 && (!i.L3 || i.L3.trim()==='')); } else currentFinalRequest = null; renderTreePanelOnly(); }
+  function handleL3Change(e){ selectedL3 = e.target.value; currentFinalRequest = requestTypesData.find(i=>i.L1===selectedL1 && i.L2===selectedL2 && i.L3===selectedL3); renderTreePanelOnly(); }
+  function handleResetTree(){ selectedL1 = selectedL2 = selectedL3 = ''; currentFinalRequest = null; renderTreePanelOnly(); }
+  function handleSearchInput(e){ searchTerm = e.target.value; debouncedUpdateSearch(searchTerm); }
+  window.handleSearchInput = handleSearchInput;
+  const debouncedUpdateSearch = debounce((t)=> renderSearchResultsOnly(t), 300);
+
+  function updateFooter(){
+    const f = document.querySelector('footer');
+    if(f) f.innerHTML = `Connected to Live Sheet • ${requestTypesData.length} Request Types Loaded • Last Sync: ${new Date().toLocaleTimeString()}`;
+  }
+
+  // -----------------------
+  // Start
+  // -----------------------
+  fetchData();
+  setInterval(()=> fetchData(true), AUTO_REFRESH_INTERVAL);
+  </script>
 </body>
 </html>
