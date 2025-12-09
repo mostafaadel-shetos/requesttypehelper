@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+​​<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -420,25 +420,13 @@
 
         // COMBINE LOGIC: Guide -> Main Data
         function useGuideSelection(gL1, gL1Plus, gL2, gL3) {
-            const match = requestTypesData.find(item => {
-                const l1 = item.L1.toLowerCase();
-                const t1 = gL1.toLowerCase();
-                const t1p = gL1Plus.toLowerCase();
-                
-                if(!l1.includes(t1p.split(' ')[0])) return false; 
-                return item.L2 === gL2 && item.L3 === gL3;
-            });
-
-            if (match) {
-                selectedL1 = match.L1;
-                selectedL2 = match.L2;
-                selectedL3 = match.L3;
-                currentFinalRequest = match;
-            } else {
-                selectedL1 = ''; selectedL2 = ''; selectedL3 = '';
-                currentFinalRequest = null;
-                alert("Guide selection mapped, but exact match not found in main data.");
-            }
+            // User Request: Reset Tree to empty on all levels when this button is pressed.
+            // This decouples the Guide results from the Tree Panel dropdowns.
+            
+            selectedL1 = '';
+            selectedL2 = '';
+            selectedL3 = '';
+            currentFinalRequest = null;
             
             closeGuide();
             renderTreePanelOnly(); 
@@ -834,7 +822,6 @@
             // Remove onclick="..." attributes from the HTML string to avoid scope issues
             appDiv.innerHTML = `
                 <div id="main-interface" class="max-w-5xl mx-auto space-y-8 pb-12 animate-fade-in relative">
-                    <!-- MODAL OVERLAY -->
                     <div id="guide-modal" class="fixed inset-0 z-[100] hidden">
                         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="window.closeGuide()"></div>
                         <div class="absolute inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 bg-white dark:bg-gray-900 sm:rounded-2xl shadow-2xl p-6 w-full sm:w-[600px] max-h-[80vh] flex flex-col transform transition-all duration-300">
